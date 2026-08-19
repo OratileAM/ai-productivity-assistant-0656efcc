@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, Plus, Sparkles, X } from "lucide-react";
 import { useState } from "react";
 
 import { AppLayout } from "@/components/app/AppLayout";
@@ -8,6 +8,12 @@ import { OutputPanel } from "@/components/app/OutputPanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -43,6 +49,10 @@ const LENGTHS = ["Short", "Medium", "Detailed"];
 function EmailPage() {
   const run = useServerFn(generateEmail);
   const [recipient, setRecipient] = useState("");
+  const [cc, setCc] = useState("");
+  const [bcc, setBcc] = useState("");
+  const [showCc, setShowCc] = useState(false);
+  const [showBcc, setShowBcc] = useState(false);
   const [purpose, setPurpose] = useState("");
   const [keyPoints, setKeyPoints] = useState("");
   const [tone, setTone] = useState("Formal");
@@ -51,8 +61,7 @@ function EmailPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const submit = async (event: React.FormEvent) => {
-    event.preventDefault();
+  const generate = async () => {
     if (purpose.trim().length < 3) {
       setError("Describe what the email should achieve.");
       return;
@@ -60,13 +69,18 @@ function EmailPage() {
     setLoading(true);
     setError(null);
     try {
-      const result = await run({ data: { recipient, purpose, tone, length, keyPoints } });
+      const result = await run({ data: { recipient, cc, bcc, purpose, tone, length, keyPoints } });
       setOutput(result.text);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault();
+    void generate();
   };
 
   return (
@@ -84,6 +98,84 @@ function EmailPage() {
               onChange={(e) => setRecipient(e.target.value)}
               placeholder="e.g. Head of Operations, external client"
             />
+          </div>
+
+          <div className="space-y-3 rounded-xl border border-border bg-secondary/40 p-3">
+            <div className="flex items-center justify-between gap-3">
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                Additional recipients
+              </Label>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button type="button" variant="outline" size="sm" aria-label="Add recipient field">
+                    <Plus className="size-4" />
+                    Add
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onSelect={() => setShowCc(true)}>Cc</DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => setShowBcc(true)}>Bcc</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            {!showCc && !showBcc && (
+              <p className="text-xs text-muted-foreground">
+                Use the add button to include Cc or Bcc recipients.
+              </p>
+            )}
+
+            {showCc && (
+              <div className="space-y-2">
+                <Label htmlFor="cc">Cc</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="cc"
+                    value={cc}
+                    onChange={(e) => setCc(e.target.value)}
+                    placeholder="finance@company.com"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Remove Cc"
+                    onClick={() => {
+                      setShowCc(false);
+                      setCc("");
+                    }}
+                  >
+                    <X className="size-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {showBcc && (
+              <div className="space-y-2">
+                <Label htmlFor="bcc">Bcc</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="bcc"
+                    value={bcc}
+                    onChange={(e) => setBcc(e.target.value)}
+                    placeholder="records@company.com"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Remove Bcc"
+                    onClick={() => {
+                      setShowBcc(false);
+                      setBcc("");
+                    }}
+                  >
+                    <X className="size-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -154,6 +246,7 @@ function EmailPage() {
           filename="email-draft.txt"
           isLoading={loading}
           error={error}
+          onRegenerate={() => void generate()}
           emptyHint="Fill in the brief and your editable email draft will appear here."
         />
       </div>

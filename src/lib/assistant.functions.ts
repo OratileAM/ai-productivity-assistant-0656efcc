@@ -6,6 +6,8 @@ import { buildEmailPrompt, buildPlannerPrompt, buildResearchPrompt } from "./pro
 
 const EmailInput = z.object({
   recipient: z.string().max(200).optional().default(""),
+  cc: z.string().max(500).optional().default(""),
+  bcc: z.string().max(500).optional().default(""),
   purpose: z.string().min(3).max(4000),
   tone: z.string().min(2).max(40),
   length: z.string().min(2).max(40),
@@ -16,7 +18,8 @@ const PlannerInput = z.object({
   role: z.string().max(200).optional().default(""),
   workHours: z.string().max(100).optional().default("09:00 - 17:00"),
   tasks: z.string().min(3).max(6000),
-  focus: z.string().max(500).optional().default(""),
+  month: z.string().max(20).optional().default("January"),
+  year: z.string().max(10).optional().default("2026"),
 });
 
 const ResearchInput = z.object({

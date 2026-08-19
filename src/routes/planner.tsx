@@ -1,14 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, Plus, Sparkles, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 import { AppLayout } from "@/components/app/AppLayout";
-import { OutputPanel } from "@/components/app/OutputPanel";
+import { MonthCalendarOutput } from "@/components/app/MonthCalendarOutput";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { generatePlan } from "@/lib/assistant.functions";
 
 export const Route = createFileRoute("/planner")({
@@ -30,26 +36,57 @@ export const Route = createFileRoute("/planner")({
   component: PlannerPage,
 });
 
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+type TaskRow = { day: string; task: string };
+
 function PlannerPage() {
   const run = useServerFn(generatePlan);
+  const now = new Date();
   const [role, setRole] = useState("");
   const [workHours, setWorkHours] = useState("09:00 - 17:00");
-  const [focus, setFocus] = useState("");
-  const [tasks, setTasks] = useState("");
+  const [month, setMonth] = useState(MONTHS[now.getMonth()]!);
+  const [year, setYear] = useState(String(now.getFullYear()));
+  const [rows, setRows] = useState<TaskRow[]>([
+    { day: "1", task: "" },
+    { day: "", task: "" },
+  ]);
   const [output, setOutput] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const submit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (tasks.trim().length < 3) {
+  const years = [now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1].map(String);
+
+  const setRow = (index: number, patch: Partial<TaskRow>) =>
+    setRows((prev) => prev.map((r, i) => (i === index ? { ...r, ...patch } : r)));
+
+  const tasksText = rows
+    .filter((r) => r.task.trim())
+    .map((r) => `Day ${r.day.trim() || "unassigned"} | ${r.task.trim()}`)
+    .join("\n");
+
+  const generate = async () => {
+    if (tasksText.trim().length < 3) {
       setError("Add at least one task, meeting or deadline.");
       return;
     }
     setLoading(true);
     setError(null);
     try {
-      const result = await run({ data: { role, workHours, tasks, focus } });
+      const result = await run({ data: { role, workHours, tasks: tasksText, month, year } });
       setOutput(result.text);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
@@ -58,10 +95,15 @@ function PlannerPage() {
     }
   };
 
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault();
+    void generate();
+  };
+
   return (
     <AppLayout
       title="AI Task Planner"
-      description="Prioritise managerial work and build a realistic time-blocked day."
+      description="Prioritise managerial work and build a realistic month plan."
     >
       <div className="grid gap-6 xl:grid-cols-2">
         <form onSubmit={submit} className="surface-card space-y-5 p-5 md:p-6">
@@ -86,43 +128,101 @@ function PlannerPage() {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="focus">Most important outcome today (optional)</Label>
-            <Input
-              id="focus"
-              value={focus}
-              onChange={(e) => setFocus(e.target.value)}
-              placeholder="Sign off the vendor contract"
-            />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Month plans are for</Label>
+              <Select value={month} onValueChange={setMonth}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {MONTHS.map((m) => (
+                    <SelectItem key={m} value={m}>
+                      {m}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Year</Label>
+              <Select value={year} onValueChange={setYear}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {years.map((y) => (
+                    <SelectItem key={y} value={y}>
+                      {y}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="tasks">Tasks, meetings and deadlines</Label>
-            <Textarea
-              id="tasks"
-              value={tasks}
-              onChange={(e) => setTasks(e.target.value)}
-              placeholder={
-                "- Board deck due tomorrow 09:00\n- 1:1 with Thabo (30 min)\n- Approve leave requests\n- Review supplier quotes\n- Team standup 10:00"
-              }
-              className="min-h-48"
-            />
+            <Label>Tasks, meetings and deadlines</Label>
+            <div className="grid grid-cols-[4.5rem_1fr_2.5rem] gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <span>Day</span>
+              <span>Task / meeting / deadline</span>
+              <span className="sr-only">Remove</span>
+            </div>
+            {rows.map((row, index) => (
+              <div key={index} className="grid grid-cols-[4.5rem_1fr_2.5rem] items-center gap-2">
+                <Input
+                  value={row.day}
+                  onChange={(e) => setRow(index, { day: e.target.value })}
+                  inputMode="numeric"
+                  placeholder="12"
+                  aria-label={`Day for task ${index + 1}`}
+                />
+                <Input
+                  value={row.task}
+                  onChange={(e) => setRow(index, { task: e.target.value })}
+                  placeholder="Board deck due 09:00"
+                  aria-label={`Task ${index + 1}`}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label={`Remove task ${index + 1}`}
+                  onClick={() => setRows((prev) => prev.filter((_, i) => i !== index))}
+                  disabled={rows.length === 1}
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              </div>
+            ))}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setRows((prev) => [...prev, { day: "", task: "" }])}
+            >
+              <Plus className="size-4" />
+              Add row
+            </Button>
           </div>
 
           <Button type="submit" size="lg" className="w-full" disabled={loading}>
             {loading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-            {loading ? "Building your day..." : "Generate daily plan"}
+            {loading ? "Building your month..." : "Generate monthly plan"}
           </Button>
         </form>
 
-        <OutputPanel
+        <MonthCalendarOutput
           value={output}
           onChange={setOutput}
           onReset={() => setOutput("")}
-          filename="daily-plan.md"
+          onRegenerate={() => void generate()}
+          filename="monthly-plan.md"
           isLoading={loading}
           error={error}
-          emptyHint="Paste your task list and your prioritised, editable schedule appears here."
+          month={MONTHS.indexOf(month)}
+          year={Number(year)}
+          emptyHint="Add your tasks with their days and your editable month calendar appears here."
         />
       </div>
     </AppLayout>

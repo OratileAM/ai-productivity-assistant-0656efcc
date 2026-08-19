@@ -49,8 +49,7 @@ function ResearchPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const submit = async (event: React.FormEvent) => {
-    event.preventDefault();
+  const generate = async () => {
     if (topic.trim().length < 3) {
       setError("Enter a topic or research question.");
       return;
@@ -65,6 +64,11 @@ function ResearchPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault();
+    void generate();
   };
 
   return (
@@ -122,7 +126,12 @@ function ResearchPage() {
             />
           </div>
 
-          <Button type="submit" size="lg" className="w-full" disabled={loading}>
+          <Button
+            type="submit"
+            size="lg"
+            className="w-full bg-primary-glow text-primary-foreground hover:bg-primary-glow/90"
+            disabled={loading}
+          >
             {loading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
             {loading ? "Researching..." : "Summarise & advise"}
           </Button>
@@ -135,6 +144,7 @@ function ResearchPage() {
           filename="research-brief.md"
           isLoading={loading}
           error={error}
+          onRegenerate={() => void generate()}
           emptyHint="Add a topic or paste an article to get a summary, insights and recommendations."
         />
       </div>

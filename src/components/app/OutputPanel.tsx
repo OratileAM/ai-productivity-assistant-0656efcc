@@ -1,4 +1,4 @@
-import { Check, Copy, Download, RotateCcw } from "lucide-react";
+import { Check, Copy, Download, RefreshCw, RotateCcw } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ export function OutputPanel({
   isLoading,
   error,
   emptyHint,
+  onRegenerate,
 }: {
   value: string;
   onChange: (next: string) => void;
@@ -20,6 +21,7 @@ export function OutputPanel({
   isLoading: boolean;
   error: string | null;
   emptyHint: string;
+  onRegenerate?: () => void;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -89,10 +91,26 @@ export function OutputPanel({
         </div>
       )}
 
-      <p className="mt-4 text-xs text-muted-foreground">
-        Responsible AI: this draft is a suggestion, not professional advice. Verify names, dates and
-        figures before sending.
-      </p>
+      <div className="mt-4 flex items-end justify-between gap-3">
+        <p className="text-xs text-muted-foreground">
+          Responsible AI: this draft is a suggestion, not professional advice. Verify names, dates
+          and figures before sending.
+        </p>
+        {onRegenerate && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onRegenerate}
+            disabled={isLoading}
+            title="Edit again"
+            className="shrink-0"
+          >
+            <RefreshCw className={isLoading ? "size-4 animate-spin" : "size-4"} />
+            Edit again
+          </Button>
+        )}
+      </div>
     </section>
   );
 }

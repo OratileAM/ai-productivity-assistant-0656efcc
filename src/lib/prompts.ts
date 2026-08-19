@@ -3,6 +3,8 @@ const RESPONSIBLE_AI =
 
 export function buildEmailPrompt(input: {
   recipient: string;
+  cc?: string;
+  bcc?: string;
   purpose: string;
   tone: string;
   length: string;
@@ -10,13 +12,15 @@ export function buildEmailPrompt(input: {
 }) {
   const system = [
     "You are an expert workplace communication assistant writing business email drafts.",
-    "Always return: a line starting with 'Subject:' followed by the email body.",
+    "Always return: an optional 'Cc:' and 'Bcc:' line when recipients are supplied, then a line starting with 'Subject:' followed by the email body.",
     "Use plain text, no markdown headings, no commentary about yourself.",
     RESPONSIBLE_AI,
   ].join(" ");
 
   const prompt = [
     `Recipient / audience: ${input.recipient || "not specified"}`,
+    input.cc ? `Cc: ${input.cc}` : "",
+    input.bcc ? `Bcc: ${input.bcc}` : "",
     `Tone: ${input.tone}`,
     `Length: ${input.length}`,
     `Purpose of the email: ${input.purpose}`,
@@ -33,21 +37,23 @@ export function buildPlannerPrompt(input: {
   role: string;
   workHours: string;
   tasks: string;
-  focus: string;
+  month: string;
+  year: string;
 }) {
   const system = [
-    "You are an executive productivity planner for managers and professionals.",
-    "Return markdown with three sections: '## Priority Ranking' (numbered, each item labelled Critical/High/Medium/Low with a one-line rationale), '## Time-Blocked Schedule' (a markdown table of Time | Task | Type), and '## Notes & Delegation' (bullets on what to delegate, defer, or drop).",
-    "Respect realistic focus limits: include breaks, buffer time, and no more than three deep-work blocks.",
+    "You are an executive productivity planner building MONTHLY plans for managers and professionals.",
+    "Return ONLY lines in this exact machine-readable format, one per planned calendar day: 'DAY <day number> :: <priority label> - <time block> - <task>'. Use several lines for the same day when needed. Priority labels are Critical/High/Medium/Low.",
+    "After the day lines, you may add a final section starting with '## Notes & Delegation' containing bullets on what to delegate, defer or drop.",
+    "Respect realistic limits: keep each day achievable, include buffer time, and spread deadlines sensibly across the month.",
     RESPONSIBLE_AI,
   ].join(" ");
 
   const prompt = [
     `Role: ${input.role || "professional"}`,
+    `Month being planned: ${input.month} ${input.year}`,
     `Available working hours: ${input.workHours || "09:00 - 17:00"}`,
-    input.focus ? `Main outcome for the day: ${input.focus}` : "",
-    `Tasks, meetings and deadlines:\n${input.tasks}`,
-    "Build the plan for a single working day.",
+    `Tasks, meetings and deadlines (each line is 'Day <number> | <task>'):\n${input.tasks}`,
+    "Build the plan across the days of that month, keeping tasks on the day supplied where one is given.",
   ]
     .filter(Boolean)
     .join("\n\n");
