@@ -73,15 +73,9 @@ export function AppLayout({
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background lg:grid lg:grid-cols-[16rem_1fr]">
-      <aside className="hidden bg-sidebar lg:block">
-        <div className="sticky top-0 h-screen">
-          <SidebarInner />
-        </div>
-      </aside>
-
+    <div className="flex min-h-screen flex-col bg-background">
       {open && (
-        <div className="fixed inset-0 z-40 lg:hidden">
+        <div className="fixed inset-0 z-40">
           <button
             aria-label="Close navigation"
             onClick={() => setOpen(false)}
@@ -100,12 +94,12 @@ export function AppLayout({
         </div>
       )}
 
-      <div className="flex min-w-0 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-border bg-background/85 px-4 py-3 backdrop-blur md:px-8">
           <button
             aria-label="Open navigation"
             onClick={() => setOpen(true)}
-            className="rounded-md border border-border p-2 text-foreground lg:hidden"
+            className="rounded-md border border-border p-2 text-foreground"
           >
             <Menu className="size-4" />
           </button>
