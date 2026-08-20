@@ -126,12 +126,7 @@ function ResearchPage() {
             />
           </div>
 
-          <Button
-            type="submit"
-            size="lg"
-            className="w-full bg-primary-glow text-primary-foreground hover:bg-primary-glow/90"
-            disabled={loading}
-          >
+          <Button type="submit" size="lg" className="w-full" disabled={loading}>
             {loading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
             {loading ? "Researching..." : "Summarise & advise"}
           </Button>
